@@ -1,9 +1,3 @@
-
-//РЁРР¤Р РћР’РђРќРР•
-
-
-
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -66,7 +60,21 @@ string textToBinary(const string& text) {
 	}
 	return result.str();
 }
-//Г„ГҐГ«ГҐГ­ГЁГҐ Г­ ГЎГ«Г®ГЄГЁ ГЇГ® 64 ГЎГЁГІГ 
+// Функция binaryToText
+string binaryToText(const string& binaryText) {
+	stringstream result;
+
+	// Проходим по каждым 8 битам и конвертируем их в символы
+	for (size_t i = 0; i < binaryText.length(); i += 8) {
+		string byte = binaryText.substr(i, 8);
+		char character = static_cast<char>(bitset<8>(byte).to_ulong());
+		result << character;
+	}
+
+	return result.str();
+}
+
+//Деление н блоки по 64 бита
 void splitInto64BitBlocks(const string& binaryText, vector<bitset<64>>& blocks) {
 	size_t length = binaryText.length();
 	size_t start = 0;
@@ -76,28 +84,28 @@ void splitInto64BitBlocks(const string& binaryText, vector<bitset<64>>& blocks) 
 		start += 64;
 	}
 }
-//ГґГ®Г°Г¬ГЁГ°Г®ГўГ Г­ГЁГҐ Г±Г«ГіГ·Г Г©Г­Г»Гµ Г±ГІГ°Г®ГЄ
+//формирование случайных строк
 string generateRandomKeyIV() {
-	const  string russianAlphabet = "Г ГЎГўГЈГ¤ГҐВёГ¦Г§ГЁГ©ГЄГ«Г¬Г­Г®ГЇГ°Г±ГІГіГґГµГ¶Г·ГёГ№ГєГ»ГјГЅГѕГї";
+	const  string russianAlphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
 	const int alphabetSize = russianAlphabet.size();
 
-	 mt19937 generator(static_cast<unsigned int>(time(nullptr)));
-	 uniform_int_distribution<int> distribution(0, alphabetSize - 1);
+	mt19937 generator(static_cast<unsigned int>(time(nullptr)));
+	uniform_int_distribution<int> distribution(0, alphabetSize - 1);
 
-	 string keyIV;
+	string keyIV;
 	for (int i = 0; i < 8; ++i) {
 		keyIV += russianAlphabet[distribution(generator)];
 	}
 
 	return keyIV;
 }
-//ГЏГҐГ°ГҐГ±ГІГ Г­Г®ГўГЄГ 
+//Перестановка
 string Transformation(string key, int table[], int len) {
 	string rez;
 	for (int i = 0; i < len; i++) {
 		for (int j = 0; j < key.length(); j++) {
 			if (j + 1 == table[i]) {
-				rez+= key[j];
+				rez += key[j];
 				break;
 			}
 		}
@@ -106,78 +114,78 @@ string Transformation(string key, int table[], int len) {
 	return rez;
 }
 string Sdvig(string T, int n) {
-	//n-ГўГҐГ«ГЁГ·ГЁГ­Г  Г±Г¤ГўГЁГЈГ 
+	//n-величина сдвига
 	string tmp, temp;
 	for (int j = 0; j < n; j++) {
 		tmp = T[0];
-			for (int i = 1; i < T.length(); i++)
-			{
-				temp += T[i];
+		for (int i = 1; i < T.length(); i++)
+		{
+			temp += T[i];
 
-			}
-			T = temp + tmp;
+		}
+		T = temp + tmp;
 	}
 	return T;
 }
-//ГЇГ®Г«ГіГ·ГҐГ­ГЁГҐ 16 ГёГІ ГЄГ«ГѕГ·ГҐГ© ГЇГ® 48 ГЎГЁГІ
+//получение 16 шт ключей по 48 бит
 string* GetKey48(string temp) {
 	string* keyround = new string[16];
 	string key;
 	string C, D;
-	int table[] = {57,49,41,33,25,17,9,1,58,50,42,34,26,18,
+	int table[] = { 57,49,41,33,25,17,9,1,58,50,42,34,26,18,
 				   10,2,59,51,43,35,27,19,11,3,60,52,44,36,
 				   63,55,47,39,31,23,15,7,62,54,46,38,30,22,
-				   14,6,61,53,45,37,29,21,13,5,28,20,12,4};
-	//Г–ГЁГЄГ« ГЇГ® ГЄГ®Г«ГЁГ·ГҐГ±ГўГі ГЎГ«Г®ГЄГ®Гў =16
-	
-		//ГЏГҐГ°ГҐГ±ГІГ Г­Г®ГўГЄГ , Г±Г¦Г ГІГЁГҐ
-		key = Transformation(temp, table, 56);
-		//cout << "ГЏГҐГ°ГҐГ±ГІГ Г­Г®ГўГЄГ  ГЁ Г±Г¦Г ГІГЁГҐ ГЄГ«ГѕГ·Г  Г¤Г® 56 ГЎГЁГІГ®Гў: " << key << endl;
-	
-	C = key.substr(0, key.length() / 2);
-	D = key.substr(key.length() / 2); 
-	for (int i = 0; i < 16; i++) 
-	{
-	//Г‘Г¤ГўГЁГЈ
-	if (i + 1 == 1 || i + 1 == 2 || i + 1 == 9 || i + 1 == 16)
-	{
-		C = Sdvig(C, 1);
-		D = Sdvig(D, 1);
-	}
-	else {
-		C = Sdvig(C, 2);
-		D = Sdvig(D, 2);
-	}
-	//ГЋГЎГєГҐГ¤ГЁГ­ГҐГ­ГЁГҐ
-	key = C + D;
-	
-	//P-ГЎГ®ГЄГ±
-	int table1[] = { 14,17,11,24,1,5,3,28,
-		15,6,21,10,23,19,12,4,
-		26,8,16,7,27,20,13,2,
-		41,52,31,37,47,55,30,40,
-		51,45,33,48,44,49,39,56,
-		34,53,46,42,50,36,29,32 };
+				   14,6,61,53,45,37,29,21,13,5,28,20,12,4 };
+	//Цикл по количесву блоков =16
 
-	key = Transformation(key, table1, 48);
-	keyround[i] = key;
-	//cout << "ГЉГ«ГѕГ· " << i << "ГЈГ® Г°Г ГіГ­Г¤Г : " << keyround[i] << endl;
+		//Перестановка, сжатие
+	key = Transformation(temp, table, 56);
+	//cout << "Перестановка и сжатие ключа до 56 битов: " << key << endl;
+
+	C = key.substr(0, key.length() / 2);
+	D = key.substr(key.length() / 2);
+	for (int i = 0; i < 16; i++)
+	{
+		//Сдвиг
+		if (i + 1 == 1 || i + 1 == 2 || i + 1 == 9 || i + 1 == 16)
+		{
+			C = Sdvig(C, 1);
+			D = Sdvig(D, 1);
+		}
+		else {
+			C = Sdvig(C, 2);
+			D = Sdvig(D, 2);
+		}
+		//Объединение
+		key = C + D;
+
+		//P-бокс
+		int table1[] = { 14,17,11,24,1,5,3,28,
+			15,6,21,10,23,19,12,4,
+			26,8,16,7,27,20,13,2,
+			41,52,31,37,47,55,30,40,
+			51,45,33,48,44,49,39,56,
+			34,53,46,42,50,36,29,32 };
+
+		key = Transformation(key, table1, 48);
+		keyround[i] = key;
+		//cout << "Ключ " << i << "го раунда: " << keyround[i] << endl;
 	}
 	return keyround;
 }
 
 string XOR_f(string IVR, string keyround) {
-	 
-	 string rez="";
-	 // Г‚ ГґГіГ­ГЄГ¶ГЁГЁ XOR_f
-	 if (IVR.length() != keyround.length()) {
-		 cout << "ГЋГёГЁГЎГЄГ : Г¤Г«ГЁГ­Г» Г±ГІГ°Г®ГЄ Г­ГҐ Г±Г®ГўГЇГ Г¤Г ГѕГІ!" << endl;
-		 return ""; // ГЁГ«ГЁ ГЄГ ГЄ-ГІГ® Г®ГЎГ°Г ГЎГ®ГІГ ГІГј ГЅГІГі Г®ГёГЁГЎГЄГі
-	 }
 
-	 for (int i = 0; i < IVR.length(); i++) {
+	string rez = "";
+	// В функции XOR_f
+	if (IVR.length() != keyround.length()) {
+		cout << "Ошибка: длины строк не совпадают!" << endl;
+		return ""; // или как-то обработать эту ошибку
+	}
+
+	for (int i = 0; i < IVR.length(); i++) {
 		if (IVR[i] == keyround[i]) {
-			rez += '0'; 
+			rez += '0';
 		}
 		else {
 			rez += '1';
@@ -189,15 +197,15 @@ string XOR_f(string IVR, string keyround) {
 vector<string> DivideString(const string& input) {
 	vector< string> result;
 
-	// ГЏГ°Г®ГўГҐГ°ГїГҐГ¬, Г·ГІГ® Г¤Г«ГЁГ­Г  Г±ГІГ°Г®ГЄГЁ Г°Г ГўГ­Г  48
+	// Проверяем, что длина строки равна 48
 	if (input.length() == 48) {
-		// ГђГ Г§ГЎГЁГўГ ГҐГ¬ Г±ГІГ°Г®ГЄГі Г­Г  8 ГЇГ®Г¤Г±ГІГ°Г®ГЄ ГЇГ® 6 Г±ГЁГ¬ГўГ®Г«Г®Гў
+		// Разбиваем строку на 8 подстрок по 6 символов
 		for (int i = 0; i < 48; i += 6) {
 			result.push_back(input.substr(i, 6));
 		}
 	}
 	else {
-		cerr << "ГЋГёГЁГЎГЄГ : Г­ГҐГўГҐГ°Г­Г Гї Г¤Г«ГЁГ­Г  Г±ГІГ°Г®ГЄГЁ, Г®Г¦ГЁГ¤Г ГҐГІГ±Гї 48 Г±ГЁГ¬ГўГ®Г«Г®Гў." << endl;
+		cerr << "Ошибка: неверная длина строки, ожидается 48 символов." << endl;
 	}
 
 	return result;
@@ -207,12 +215,12 @@ vector<string> DivideString(const string& input) {
 int binaryToDecimal(const string& binaryNumber) {
 	int decimalNumber = 0;
 
-	// ГЏГ°Г®ГµГ®Г¤ГЁГ¬ ГЇГ® ГЄГ Г¦Г¤Г®Г¬Гі Г±ГЁГ¬ГўГ®Г«Гі Гў Г®ГЎГ°Г ГІГ­Г®Г¬ ГЇГ®Г°ГїГ¤ГЄГҐ
+	// Проходим по каждому символу в обратном порядке
 	for (int i = binaryNumber.length() - 1; i >= 0; --i) {
-		// ГЏГ°ГҐГ®ГЎГ°Г Г§ГіГҐГ¬ Г±ГЁГ¬ГўГ®Г« Гў Г¶ГҐГ«Г®Г·ГЁГ±Г«ГҐГ­Г­Г®ГҐ Г§Г­Г Г·ГҐГ­ГЁГҐ ('0' -> 0, '1' -> 1)
+		// Преобразуем символ в целочисленное значение ('0' -> 0, '1' -> 1)
 		int bit = binaryNumber[i] - '0';
 
-		// Г„Г®ГЎГ ГўГ«ГїГҐГ¬ Гў Г¤ГҐГ±ГїГІГЁГ·Г­Г®ГҐ Г·ГЁГ±Г«Г® ГўГҐГ± Г®Г·ГҐГ°ГҐГ¤Г­Г®ГЈГ® ГЎГЁГІГ 
+		// Добавляем в десятичное число вес очередного бита
 		decimalNumber += bit * static_cast<int>(pow(2, binaryNumber.length() - 1 - i));
 	}
 
@@ -221,28 +229,28 @@ int binaryToDecimal(const string& binaryNumber) {
 
 string S_blocks(string IVR) {
 	string rez = "";
-	string k="", n="";
+	string k = "", n = "";
 	//string* S = new string[8];
-	//Г„ГҐГ«ГЁГ¬ Г­Г  8 ГЎГ«Г®ГЄГ®Гў ГЇГ® 6 Г±ГЁГ¬ГўГ®Г«Г®Гў
+	//Делим на 8 блоков по 6 символов
 	vector<string> block = DivideString(IVR);
 	for (int i = 0; i < block.size(); ++i) {//8
-		k =n= "";
-	//	cout << "ГЏГ®Г¤Г±ГІГ°Г®ГЄГ  " << i + 1 << ": " << block[i] << endl;
+		k = n = "";
+		cout << "Подстрока " << i + 1 << ": " << block[i] << endl;
 		for (int j = 1; j < 5; j++) k += block[i][j];
 		n += block[i][0]; n += block[i][5];
 		block[i] = bitset<4>(S[i][binaryToDecimal(n)][binaryToDecimal(k)]).to_string();
-	//	cout << block[i] << endl;
+		cout << block[i] << endl;
 		rez += block[i];
 	}
 	return rez;
 }
 
-//ГГЁГґГ°Г®ГўГ Г­ГЁГҐ IV DES
+//Шифрование IV DES
 string DES(string key, string IV) {
 	string* keyround = GetKey48(key);
-//	for (int i = 0; i < 16; i++)
-	//cout << "ГЉГ«ГѕГ· " << i << "ГЈГ® Г°Г ГіГ­Г¤Г : " << keyround[i] << endl;
-	//ГЌГ Г·Г Г«ГјГ­Г Гї ГЇГҐГ°ГҐГ±ГІГ Г­Г®ГўГЄГ 
+	for (int i = 0; i < 16; i++)
+		cout << "Ключ " << i << "го раунда: " << keyround[i] << endl;
+	//Начальная перестановка
 	int table[] = { 58,50,42,34,26,18,10,2,
 		60,52,44,36,28,20,12,4,
 		62,54,46,38,30,22,14,6,
@@ -252,12 +260,12 @@ string DES(string key, string IV) {
 		61,53,45,37,29,21,13,5,
 		63,55,47,39,31,23,15,7 };
 	IV = Transformation(IV, table, 64);
-	//cout << "\nГЌГ Г·Г Г«ГјГ Гї ГЇГ°ГҐГ±ГІГ Г­Г®ГўГЄГ  " << IV << endl;
-	//ГђГ Г§ГЎГЁГҐГ­ГЁГҐ IV Г­Г  2 Г·Г Г±ГІГЁ: IVL, IVR - 32bit
-	string IVL= IV.substr(0, IV.length() / 2);
+	cout << "\nНачальая престановка " << IV << endl;
+	//Разбиение IV на 2 части: IVL, IVR - 32bit
+	string IVL = IV.substr(0, IV.length() / 2);
 	string IVR = IV.substr(IV.length() / 2);
-	
-	
+
+
 	int table1[] = { 32,1,2,3,4,5,
 		4,5,6,7,8,9,
 		8,9,10,11,12,13
@@ -267,28 +275,28 @@ string DES(string key, string IV) {
 		24,25,26,27,28,29,
 		28,29,30,31,32,1 };
 	for (int i = 0; i < 16; i++) {
-		//cout << "\nГђГ ГіГ­Г¤ " << i << endl;
-		//ГђГ Г±ГёГЁГ°ГҐГ­ГЁГҐ ГЇГ°Г ГўГ®Г© ГЇГ®Г«Г®ГўГЁГ­Г»- 48bit
+		cout << "\nРаунд " << i << endl;
+		//Расширение правой половины- 48bit
 		IVR = Transformation(IVR, table1, 48);
-	//	cout << "ГђГ Г±ГёГЁГ°ГҐГ­ГЁГҐ ГЇГ°Г ГўГ®Г© ГЇГ®Г«Г®ГўГЁГ­Г»: " << IVR << endl;
+		cout << "Расширение правой половины: " << IVR << endl;
 		//XOR
-	//	cout << "IVR: "  <<IVR.length()<<"  Key: "<<keyround[i].length()<< endl;
+		cout << "IVR: " << IVR.length() << "  Key: " << keyround[i].length() << endl;
 		IVR = XOR_f(IVR, keyround[i]);
-		//cout << "XOR: " << IVR<< endl;
-		// S-ГЎГ«Г®ГЄГЁ.
+		cout << "XOR: " << IVR << endl;
+		// S-блоки.
 		IVR = S_blocks(IVR);//32bit
-		//P-ГЎГ®ГЄГ±
+		//P-бокс
 		int table2[] = { 16,7,20,21,29,12,28,17,
 			1,15,23,26,5,18,31,10,
 			2,8,24,14,32,27,3,9,
 			19,13,30,6,22,11,4,25 };
 		IVR = Transformation(IVR, table2, 32);
-		//XOR Г± Г«ГҐГўГ®Г© ГЇГ®Г«Г®ГўГЁГ­Г®Г©.
+		//XOR с левой половиной.
 		IVL = XOR_f(IVR, IVL);
-		//ГЋГЎГ¬ГҐГ­ Г«ГҐГўГ®Г© ГЁ ГЇГ°Г ГўГ®Г© ГЇГ®Г«Г®ГўГЁГ­.
+		//Обмен левой и правой половин.
 		IV = IVR + IVL;
 	}
-	//ГЉГ®Г­ГҐГ·Г­Г Гї ГЇГҐГ°ГҐГ±ГІГ Г­Г®ГўГЄГ 
+	//Конечная перестановка
 	int table3[] = { 40,8,48,16,56,24,64,32,
 		39,7,47,15,55,23,63,31,
 		38,6,46,14,54,22,62,30,
@@ -298,151 +306,123 @@ string DES(string key, string IV) {
 		34,2,42,10,50,18,58,26,
 		33,1,41,9,49,17,57,25 };
 	IV = Transformation(IV, table3, 64);
-//	cout << "\nГ‡Г ГёГЁГґГ°Г®ГўГ Г­Г­Г»Г© IV : " << IV << endl << endl;
+	cout << "\nЗашифрованный IV : " << IV << endl << endl;
 	return IV;
 }
 
 string newIV(string iv, int r) {
-	string rez = "", temp = iv.substr(0,r);
-	rez = iv.substr(r)+temp;
+	string rez = "", temp = iv.substr(0, r);
+	rez = iv.substr(r) + temp;
 	return rez;
 }
 
-//ГђГ Г§ГЎГЁГҐГ­ГЁГҐ ГЎГЁГ­Г Г°Г­Г®Г© Г±ГІГ°Г®ГЄГЁ Г­Г  ГЇГ®Г¤ ГЎГ«Г®ГЄГЁ ГЇГ® r
-vector<string> SplitBinaryString(const string& binaryString, int r) {
+//Разбиение бинарной строки на под блоки по r
+vector<string> SplitBinaryString(const string & binaryString, int r) {
 	vector<string> substrings;
-	
+
 	for (size_t i = 0; i < binaryString.length(); i += r) {
 		substrings.push_back(binaryString.substr(i, r));
 	}
 	return substrings;
 }
 int main() {
-	setlocale(LC_ALL, "Russian"); 
-	string IVsh;//Г§Г ГёГЁГґГ°Г®ГўГ Г­Г»Г© IV
-	
+	string IVsh;
+	setlocale(LC_ALL, "Russian");
+	// Загружаем ключ и IV из файла
+	ifstream keyIVFile("D:\\8сем\\ТЗИ\\TZI2lab\\TZI2lab\\keyIV.txt");
+	if (!keyIVFile.is_open()) {
+		cerr << "Unable to open file: keyIV.txt" << endl;
+		return 1;
+	}
+
+	string key, iv;
+	keyIVFile >> key >> iv;
+	keyIVFile.close();
+
+	// Переводим ключ и IV в двоичное представление
+	string binaryKey = textToBinary(key);
+	string binaryIV = textToBinary(iv);
+
+	// Выводим результат
+	cout << "\n\nКлюч из файла: " << key << "\n";
+	cout << "Двоичное представление ключа: " << binaryKey << "\n\n";
+
+	cout << "IV из файла: " << iv << "\n";
+	cout << "Двоичное представление IV: " << binaryIV << "\n";
+
+	// Загружаем зашифрованный текст из файла
+	ifstream encryptedFile("D:\\8сем\\ТЗИ\\TZI2lab\\TZI2lab\\rez.txt");
+	if (!encryptedFile.is_open()) {
+		cerr << "Unable to open file: rez.txt" << endl;
+		return 1;
+	}
+
+	stringstream encryptedBuffer;
+	encryptedBuffer << encryptedFile.rdbuf();
+	string encryptedText = encryptedBuffer.str();
+	encryptedFile.close();
+
+	// Выводим зашифрованный текст
+	cout << "\n\nЗашифрованный текст из файла:\n" << encryptedText << "\n";
+
+	size_t remainder = encryptedText.size() % 64;
+	if (remainder != 0) {
+		size_t padding = 64 - remainder;
+		encryptedText.insert(0, padding, '0');
+		cout << "Текст после добавления нулей для кратности 64:\n" << encryptedText << endl;
+	}
+	// Разбиваем двоичный код на блоки по 64 бита
+	vector<bitset<64>> blocks;
+	splitInto64BitBlocks(encryptedText, blocks);
+
+	// Выводим блоки на экран
+	cout << "Блоки по 64 бита:\n";
+
+	for (size_t i = 0; i < blocks.size(); ++i) {
+		cout << "Блок " << i + 1 << ": " << blocks[i] << "\n";
 
 
-	// Г“ГЄГ Г§Г ГІГј ГЇГіГІГј ГЄ ГґГ Г©Г«Гі, ГЁГ§ ГЄГ®ГІГ®Г°Г®ГЈГ® Г­ГіГ¦Г­Г® Г·ГЁГІГ ГІГј ГІГҐГЄГ±ГІ
-	 string filePath = "a.txt";
-	 // Г“Г±ГІГ Г­Г ГўГ«ГЁГўГ ГҐГ¬ Г«Г®ГЄГ Г«Гј Г¤Г«Гї ГЄГ®Г°Г°ГҐГЄГІГ­Г®ГЈГ® Г®ГІГ®ГЎГ°Г Г¦ГҐГ­ГЁГї Г°ГіГ±Г±ГЄГЁГµ Г±ГЁГ¬ГўГ®Г«Г®Гў
-	  wcout.imbue( locale(""));
-	// ГЋГІГЄГ°Г»ГўГ ГҐГ¬ ГґГ Г©Г«
-	 ifstream file(filePath,  ios::binary);
-	 if (!file.is_open()) {
-		 cerr << "Unable to open file: " << filePath <<  endl;
-		 return 1;
-	 }
-	
-	// Г—ГЁГІГ ГҐГ¬ ГІГҐГЄГ±ГІ ГЁГ§ ГґГ Г©Г«Г 
-	 stringstream buffer;
-	buffer << file.rdbuf();
-	 string text = buffer.str();
+	}
+	string RSHtext;// расшифрованный текст
 
-	// Г‡Г ГЄГ°Г»ГўГ ГҐГ¬ ГґГ Г©Г«
-	file.close();
+	int n = blocks.size() / 8;//количество подблоков
+	string IVshR; int r = 8;
+	vector<string> RSHtextR;
+	//цикл по kоличеству блоков
+	for (int i = 0; i < blocks.size(); i++) {
 
-	// ГЏГҐГ°ГҐГўГ®Г¤ГЁГ¬ Г°ГіГ±Г±ГЄГЁГҐ Г±ГЁГ¬ГўГ®Г«Г» Гў ГёГҐГ±ГІГ­Г Г¤Г¶Г ГІГҐГ°ГЁГ·Г­Г»Г© ГЄГ®Г¤ ГЁ Г§Г ГІГҐГ¬ Гў Г¤ГўГ®ГЁГ·Г­Г»Г© ГЄГ®Г¤
-	 string binaryText = textToBinary(text);
+		cout << "=========================================" << endl;
 
-	// Г‚Г»ГўГ®Г¤ГЁГ¬ Г°ГҐГ§ГіГ«ГјГІГ ГІ
-	 cout << "ГЋГ°ГЁГЈГЁГ­Г Г«ГјГ­Г© ГІГҐГЄГ±ГІ:\n" << text << "\n\n";
-	 cout << "Г’ГҐГЄГ±ГІ Гў Г¤ГўГ®ГЁГ·Г­Г®Г¬ ГЇГ°ГҐГ¤Г±ГІГ ГўГ«ГҐГ­ГЁГЁ:\n" << binaryText <<  endl;
-	 // Г‚Г»ГўГ®Г¤ГЁГ¬ ГЄГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЎГЁГІГ®Гў ГЁ Г¤Г®ГЎГ ГўГ«ГїГҐГ¬ Г­ГіГ«ГЁ Г¤Г® ГЄГ°Г ГІГ­Г®Г±ГІГЁ 64
-	 cout << "ГЉГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЎГЁГІГ®Гў: " << binaryText.size() << endl;
+		RSHtextR = SplitBinaryString(blocks[i].to_string(), r);//блоки по  r  символов
+		for (int t = 0; t < RSHtextR.size(); t++) {//цикл по  r  блокам
+			//r=8
+			cout << i << " блок " << t << " подблок: " << RSHtextR[t] << "\n_________________________________________________________" << endl;
+			//Шифруем IV
+			IVsh = DES(binaryKey, binaryIV);
 
-	 size_t remainder = binaryText.size() % 64;
-	 if (remainder != 0) {
-		 size_t padding = 64 - remainder;
-		 binaryText.insert(0, padding, '0');
-		 cout << "Г’ГҐГЄГ±ГІ ГЇГ®Г±Г«ГҐ Г¤Г®ГЎГ ГўГ«ГҐГ­ГЁГї Г­ГіГ«ГҐГ© Г¤Г«Гї ГЄГ°Г ГІГ­Г®Г±ГІГЁ 64:\n" << binaryText << endl;
-	 }
-	 // ГђГ Г§ГЎГЁГўГ ГҐГ¬ Г¤ГўГ®ГЁГ·Г­Г»Г© ГЄГ®Г¤ Г­Г  ГЎГ«Г®ГЄГЁ ГЇГ® 64 ГЎГЁГІГ 
-	 vector<bitset<64>> blocks;
-	 splitInto64BitBlocks(binaryText, blocks);
+			IVshR = IVsh.substr(0, r);
+			cout << "Первые 8 бит IV:" << IVshR << endl;
+			cout << "XOR куска блока текста и  IV=8бит: " << XOR_f(RSHtextR[t], IVshR) << endl;
 
-	 // Г‚Г»ГўГ®Г¤ГЁГ¬ ГЎГ«Г®ГЄГЁ Г­Г  ГЅГЄГ°Г Г­
-	 cout << "ГЃГ«Г®ГЄГЁ ГЇГ® 64 ГЎГЁГІГ :\n";
-	
-	 for (size_t i = 0; i < blocks.size(); ++i) {
-		 cout << "ГЃГ«Г®ГЄ " << i + 1 << ": " << blocks[i] << "\n";
-		
 
-	 }
-	 string SHtext ;// Г§Г ГёГЁГґГ°Г®ГўГ Г­Г­Г»Г© ГІГҐГЄГ±ГІ
+			RSHtext += XOR_f(RSHtextR[t], IVshR);
+			binaryIV = newIV(IVsh, r);
+			cout << " Новый IV: " << binaryIV << endl;
+		}
+	}
+	cout << "\n\nРАСШИФРОВАННЫЙ ТЕКСТ: " << RSHtext <<"\n"<< binaryToText(RSHtext) << endl;
+	ofstream outputFile("rez.txt");
+	// Проверяем, успешно ли открыт файл
+	if (outputFile.is_open()) {
+		// Записываем текст в файл
+		outputFile << binaryToText(RSHtext);
+		// Закрываем файл
+		outputFile.close();
 
-	 // ГѓГҐГ­ГҐГ°ГЁГ°ГіГҐГ¬ Г±Г«ГіГ·Г Г©Г­Г»Г© ГЄГ«ГѕГ· ГЁ IV
-	  string key = generateRandomKeyIV();
-	  string iv = generateRandomKeyIV();
-
-	  // ГЏГ°Г®ГўГҐГ°ГїГҐГ¬, Г·ГІГ®ГЎГ» ГЄГ«ГѕГ· ГЁ IV Г®ГІГ«ГЁГ·Г Г«ГЁГ±Гј
-	  while (key == iv) {
-		  iv = generateRandomKeyIV();
-	  }
-	  ofstream outputFileKEY("keyIV.txt");
-	  // ГЏГ°Г®ГўГҐГ°ГїГҐГ¬, ГіГ±ГЇГҐГёГ­Г® Г«ГЁ Г®ГІГЄГ°Г»ГІ ГґГ Г©Г«
-	  if (outputFileKEY.is_open()) {
-		  // Г‡Г ГЇГЁГ±Г»ГўГ ГҐГ¬ ГІГҐГЄГ±ГІ Гў ГґГ Г©Г«
-		  outputFileKEY << key;
-		  outputFileKEY << "\n";
-		  outputFileKEY << iv;
-		  // Г‡Г ГЄГ°Г»ГўГ ГҐГ¬ ГґГ Г©Г«
-		  outputFileKEY.close();
-
-		  cout << "Г’ГҐГЄГ±ГІ ГіГ±ГЇГҐГёГ­Г® Г§Г ГЇГЁГ±Г Г­ Гў ГґГ Г©Г«.\n";
-	  }
-	  else {
-		  cerr << "ГЋГёГЁГЎГЄГ  Г®ГІГЄГ°Г»ГІГЁГї ГґГ Г©Г«Г  Г¤Г«Гї Г§Г ГЇГЁГ±ГЁ.\n";
-	  }
-
-	 // ГЏГҐГ°ГҐГўГ®Г¤ГЁГ¬ ГЄГ«ГѕГ· ГЁ IV Гў Г¤ГўГ®ГЁГ·Г­Г®ГҐ ГЇГ°ГҐГ¤Г±ГІГ ГўГ«ГҐГ­ГЁГҐ
-	  string binaryKey = textToBinary(key);
-	  string  binaryIV = textToBinary(iv);
-
-	 // Г‚Г»ГўГ®Г¤ГЁГ¬ Г°ГҐГ§ГіГ«ГјГІГ ГІ
-	  cout << "\n\nГ‘Г«ГіГ·Г Г©Г­Г»Г© ГЄГ«ГѕГ·: " << key << "\n";
-	  cout << "Г„ГўГ®ГЁГ·Г­Г®ГҐ ГЇГ°ГҐГ¤Г±ГІГ ГўГ«ГҐГ­ГЁГҐ ГЄГ«ГѕГ·Г : " << binaryKey << "\n\n";
-
-	  cout << "Г‘Г«ГіГ·Г Г©Г­Г»Г© IV: " << iv << "\n";
-	  cout << "Г„ГўГ®ГЁГ·Г­Г®ГҐ ГЇГ°ГҐГ¤Г±ГІГ ГўГ«ГҐГ­ГЁГҐ IV: " << binaryIV << "\n";
-	  int n = blocks.size()/8;//ГЄГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЇГ®Г¤ГЎГ«Г®ГЄГ®Гў
-	  string IVshR; int r = 8;
-	  vector<string> SHtextR; 
-	  //Г¶ГЁГЄГ« ГЇГ® kГ®Г«ГЁГ·ГҐГ±ГІГўГі ГЎГ«Г®ГЄГ®Гў
-	  for (int i = 0; i < blocks.size(); i++) {
-		
-		//  cout << "=========================================" << endl;
-		
-		  SHtextR = SplitBinaryString(blocks[i].to_string(), r);//ГЎГ«Г®ГЄГЁ ГЇГ®  r  Г±ГЁГ¬ГўГ®Г«Г®Гў
-		  for (int t = 0; t < SHtextR.size(); t++) {//Г¶ГЁГЄГ« ГЇГ®  r  ГЎГ«Г®ГЄГ Г¬
-			  //r=8
-			//  cout << i << " ГЎГ«Г®ГЄ " << t << " ГЇГ®Г¤ГЎГ«Г®ГЄ: " << SHtextR[t] <<"\n_________________________________________________________"<< endl;
-				//ГГЁГґГ°ГіГҐГ¬ IV
-			  IVsh = DES(binaryKey, binaryIV);
-
-				IVshR = IVsh.substr(0, r);
-			//	cout << "ГЏГҐГ°ГўГ»ГҐ 8 ГЎГЁГІ IV:" << IVshR<<endl;
-			//	cout << "XOR ГЄГіГ±ГЄГ  ГЎГ«Г®ГЄГ  ГІГҐГЄГ±ГІГ  ГЁ  IV=8ГЎГЁГІ: " << XOR_f(SHtextR[t], IVshR)<< endl;
-				
-				
-				  SHtext += XOR_f(SHtextR[t], IVshR);
-				  binaryIV = newIV(IVsh,r);
-			 // cout << " ГЌГ®ГўГ»Г© IV: " << binaryIV<< endl;
-		  }
-	  }
-	  cout << "\n\nГ‡ГЂГГ€Г”ГђГЋГ‚ГЂГЌГЌГ›Г‰ Г’Г…ГЉГ‘Г’: " << SHtext << endl;
-	  ofstream outputFile("rez.txt");
-	    // ГЏГ°Г®ГўГҐГ°ГїГҐГ¬, ГіГ±ГЇГҐГёГ­Г® Г«ГЁ Г®ГІГЄГ°Г»ГІ ГґГ Г©Г«
-	  if (outputFile.is_open()) {
-		  // Г‡Г ГЇГЁГ±Г»ГўГ ГҐГ¬ ГІГҐГЄГ±ГІ Гў ГґГ Г©Г«
-		  outputFile << SHtext;
-		   // Г‡Г ГЄГ°Г»ГўГ ГҐГ¬ ГґГ Г©Г«
-		  outputFile.close();
-
-		  cout << "Г’ГҐГЄГ±ГІ ГіГ±ГЇГҐГёГ­Г® Г§Г ГЇГЁГ±Г Г­ Гў ГґГ Г©Г«.\n";
-	  }
-	  else {
-		  cerr << "ГЋГёГЁГЎГЄГ  Г®ГІГЄГ°Г»ГІГЁГї ГґГ Г©Г«Г  Г¤Г«Гї Г§Г ГЇГЁГ±ГЁ.\n";
-	  }
-		  return 0;
+		cout << "Текст успешно записан в файл.\n";
+	}
+	else {
+		cerr << "Ошибка открытия файла для записи.\n";
+	}
+	return 0;
 }
